@@ -1,0 +1,140 @@
+---
+title: "Titanic -  Data Wrangling"
+author: "Francia Moscoso"
+date: "April 12, 2016"
+output: html_document
+---
+
+setwd("~/SprintboardProject/Titanic_DataWrangling")
+
+Loading Libraries.
+```{r LoadLib, message=F, warning=F}
+library(dplyr)
+```
+
+Loading 'titanic' data set.
+```{r comment="", echo=TRUE}
+train <- read.csv("titanic_original.csv", header = TRUE)
+```
+
+
+#1: Port of embarkation
+The embarked column has one missing value, which is known to correspond to a passenger who actually
+embarked at Southampton. Find the missing value and replace it with S.<br>
+
+```{r comment="", echo=TRUE}
+#Summarize 'embarked' column. There are 2 records with blank values.
+table(train$embarked)
+
+#View the records with blank values in 'embarked' column
+filter(train,train$embarked=="")
+
+#View the records with NA values in 'embarked' column. As you can see, no NAs values in 'embarked' column.
+filter(train,is.na(train$embarked))
+
+#Update records with blank values in 'embarked' column to value "S" (column number 11)
+train[(train[,11] ==""),11] <- "S"
+
+#Another way to create the same update as the previous one
+train$embarked[train$embarked ==""] <- "S"
+
+#Verify update. Update was successful, as you can see there are two more records with "S" values (914+2).
+table(train$embarked)
+
+```
+
+
+#2: Age
+You'll notice that a lot of the values in the Age column are missing. While there are many ways to fill these missing values, using the mean or median of the rest of the values is quite common in such cases.<br>
+1. Calculate the mean of the Age column and use that value to populate the missing values <br>
+
+```{r comment="", echo=TRUE}
+# Number of records with missing values in Age column
+filter(train,is.na(train$age)) %>% count()
+
+# Read Age column number. Five is the column number for Age column
+colnames(train)
+
+# Update NA values with mean value on column Age (column number 5)
+train[is.na(train$age),5] <- mean(train$age, na.rm=TRUE)
+
+# Another way to create the same update as the previous one
+train$age[is.na(train$age)] <- mean(train$age, na.rm=TRUE)
+```
+<br>
+2. Think about other ways you could have populated the missing values in the age column. Why would you pick any of those over the mean (or not)?<br>
+The mean is the best option since it is a representation of the average value. The 25 and 75 quantile values do not represent the average value.
+
+#3: Lifeboat
+You're interested in looking at the distribution of passengers in different lifeboats, but as we know, many passengers did not make it to a boat :-( This means that there are a lot of missing values in the boat column. Fill these empty slots with a dummy value e.g. NA
+
+```{r comment="", echo=TRUE}
+# Number of records missing values in 'boat' column.
+filter(train, train$boat =="") %>% count()
+
+# Number of records with NA value in 'boat' column. 
+filter(train, is.na(train$boat)) %>% count()
+
+# Update all blank 'boat' fields to NA. Event though there is a warning, the update is executed.
+# The warning makes reference to an invalid factor. NA is not recognized as a factor.
+train$boat[train$boat==""] <- ("NA")
+
+# Look how the blank fields replaced as NA are now recognized by the 'is.na' command, giving us
+# the 823 updated fields.
+filter(train, is.na(train$boat)) %>% count()
+```
+
+#4: Cabin
+You notice that many passengers don't have a cabin number associated with them.
+Does it make sense to fill missing cabin numbers with a value?
+What does a missing value here mean?
+
+```{r comment="", echo=TRUE}
+# Total data.frame dimension
+dim(train)
+
+#Number of records missing cabin number
+filter(train, train$cabin=="") %>% count()
+
+
+# 1014 records missing cabin numbers from a total of 1309 entries. It does not make sense to fill up those missing values since they represent a high number, 77% of the total entries.  
+
+```
+
+
+You have a hunch that the fact that the cabin number is missing might be a useful indicator of survival. Create a new column has_cabin_number which has 1 if there is a cabin number, and 0 otherwise.
+```{r comment="", echo=TRUE}
+#Number of 'cabin' with missing values
+filter(train, train$cabin=="") %>% count()
+
+#Updating 'cabin' missing values with "NA".  Event though there is a warning, the update is executed.
+# The warning makes reference to an invalid factor. NA is not recognized as a factor.
+train$cabin[train$cabin==""] <- "NA"
+
+#Verifing the update
+filter(train, is.na(train$cabin)) %>% count()
+
+#Create column "has_cabin_number" with value "1" as default
+train$has_cabin_number <- "1"
+
+#Update has_cabin_number to "0" to indicate that record is missing "cabin" number
+(train$has_cabin_number[is.na(train$cabin)] <- "0")
+
+#THe following lines will get the same effect as the previous 'has_cabin_number' updates (without #setting "has_cabin_number" as "1" before any update)
+#(train$has_cabin_number[is.na(train$cabin)] <- "0")
+#(train$has_cabin_number[!(is.na(train$cabin))] <- "1")
+
+#Verify the Update
+table(train$has_cabin_number)  
+
+```
+
+#6: Submit the project on Github
+Include your code, the original data as a CSV file titanic_original.csv, and the cleaned up data as a CSV file called titanic_clean.csv.
+```{r comment="", echo=TRUE}
+
+#Create csv file with the cleaned up data
+write.csv(train, "titanic_clean.csv", row.names = T)
+```
+<br>
+<br>
